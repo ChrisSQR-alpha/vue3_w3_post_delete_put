@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" crossorigin="anonymous">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.4.15/vue.global.min.js"></script>
+
+</head>
+
+<body>
+    <div id="app">
+        <div class="container">
+            <div class="text-end mt-4">
+                <!-- 使用 ＠click 觸發 modal 顯示  -->
+                <button class="btn btn-primary" @click="openModal('new')">
+                    建立新的產品
+                </button>
+            </div>
+            <table class="table mt-4">
+                <thead>
+                    <tr>
+                        <th width="120">
+                            分類
+                        </th>
+                        <th>產品名稱</th>
+                        <th width="120">
+                            原價
+                        </th>
+                        <th width="120">
+                            售價
+                        </th>
+                        <th width="100">
+                            是否啟用
+                        </th>
+                        <th width="120">
+                            編輯
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- 如果 v-for 寫在 tbody 框線的顏色會不正確-->
+                    <tr v-for="item in products" :key="item.id">
+                        <td> {{ item.category }}</td>
+                        <td> {{ item.title }}</td>
+                        <td class="text-end"> {{ item.origin_price }}</td>
+                        <td class="text-end"> {{ item.price }}</td>
+                        <td>
+                            <span v-show="item.is_enabled" class="text-success">啟用</span>
+                            <span v-show="!item.is_enabled">未啟用</span>
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-outline-primary btn-sm" @click="openModal('edit', item)">
+                                    編輯
+                                </button>
+                                <button type="button" class="btn btn-outline-danger btn-sm" @click="openModal('delete', item)">
+                                    刪除
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <!-- Modal -->
+        <div id="productModal" ref="productModal" class="modal fade" tabindex="-1" aria-labelledby="productModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content border-0">
+                    <div class="modal-header bg-dark text-white">
+                        <h5 id="productModalLabel" class="modal-title">
+                            <span v-if="isNew">新增產品</span>
+                            <span v-else>編輯產品</span>
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-sm-4">
+                                <div class="mb-2">
+                                    <div class="mb-3">
+                                        <label for="imageUrl" class="form-label">輸入圖片網址</label>
+                                        <!-- 主圖的渲染 -->
+                                        <!-- 透過 v-model 綁定 tempData 的值，以及 input 的值 -->
+                                        <!-- 實現雙向綁定 -->
+                                        <input type="text" id="imageUrl" v-model="tempData.imageUrl" class="form-control"
+                                            placeholder="請輸入圖片連結">
+                                    </div>
+                                    <!-- 藉由 v-bind 綁住 src 這個 attribute -->
+                                    <!-- 把 tempData.imageUrl 儲存的網址的圖片要過來渲染在畫面上 -->
+                                    <img class="img-fluid" :src="tempData.imageUrl">
+                                </div>
+
+                                <h3 class="mb-3">多圖新增</h3>
+                                <div v-if="Array.isArray(tempData.imagesUrl)">
+                                    <!-- 渲染 tempData.imagesUrl 陣列裡面的網址和圖片 -->
+                                    <!-- v-for 裡面的 image 代表 tempData.imagesUrl 裡面的 網址 string-->
+                                    <!-- v-for 裡面的 key 代表 tempData.imagesUrl 裡面的 index-->
+                                    <div class="mb-1" v-for="(image, key) in tempData.imagesUrl" :key="key">
+                                        <div class="mb-3">
+                                            <label for=`imagesUrl${key}`></label>
+                                            <input id=`imagesUrl${key}` v-model="tempData.imagesUrl[key]" type="text" class="form-control" placeholder="請輸入圖片連結">
+                                        </div>
+                                        <img class="img-fluid" :src="image">
+                                    </div>
+                                    <!-- 透過 v-if v-else 判斷要顯示新增圖片還是刪除圖片的按鈕 -->
+                                    <!-- 如果 tempData.imagesUrl 長度為 0 ，或這個陣列目前的最後一個位置有一個值，則直接顯示新增圖片-->
+                                    <!-- 按下新增圖片，會 v-on push 一個空字串到 tempData.imagesUrl 讓他 v-for 出來-->
+                                    <div v-if="tempData.imagesUrl.length === 0 || tempData.imagesUrl[tempData.imagesUrl.length - 1]">
+                                        <button class="btn btn-outline-primary btn-sm d-block w-100" @click="tempData.imagesUrl.push('')">
+                                            新增圖片
+                                        </button>
+                                    </div>
+                                    <div v-if="tempData.imagesUrl.length !== 0">
+                                        <button class="btn btn-outline-danger btn-sm d-block w-100" @click="tempData.imagesUrl.pop()">
+                                            刪除圖片
+                                        </button>
+                                    </div>
+                                </div>
+                                <div v-else>
+                                    <button class="btn btn-outline-danger btn-sm d-block w-100">
+                                        應當要新增圖片
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-sm-8">
+                                <div class="mb-3">
+                                    <label for="title" class="form-label">標題</label>
+                                    <input v-model="tempData.title" id="title" type="text" class="form-control"
+                                        placeholder="請輸入標題">
+                                </div>
+
+                                <div class="row">
+                                    <div class="mb-3 col-md-6">
+                                        <label for="category" class="form-label">分類</label>
+                                        <input v-model="tempData.category" id="category" type="text"
+                                            class="form-control" placeholder="請輸入分類">
+                                    </div>
+                                    <div class="mb-3 col-md-6">
+                                        <label for="price" class="form-label">單位</label>
+                                        <input v-model="tempData.unit" id="unit" type="text" class="form-control"
+                                            placeholder="請輸入單位">
+                                    </div>
+                                </div>
+
+
+
+                                <div class="row">
+                                    <div class="mb-3 col-md-6">
+                                        <label for="origin_price" class="form-label">原價</label>
+                                        <input v-model="tempData.origin_price" id="origin_price" type="number" min="0"
+                                            class="form-control" placeholder="請輸入原價">
+                                    </div>
+                                    <div class="mb-3 col-md-6">
+                                        <label for="price" class="form-label">售價</label>
+                                        <input v-model="tempData.price" id="price" type="number" min="0"
+                                            class="form-control" placeholder="請輸入售價">
+                                    </div>
+                                </div>
+                                <hr>
+
+                                <div class="mb-3">
+                                    <label for="description" class="form-label">產品描述</label>
+                                    <textarea v-model="tempData.description" id="description" type="text"
+                                        class="form-control" placeholder="請輸入產品描述">
+                    </textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="content" class="form-label">說明內容</label>
+                                    <textarea v-model="tempData.content" id="content" type="text" class="form-control"
+                                        placeholder="請輸入說明內容">
+                    </textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input v-model="tempData.is_enabled" id="is_enabled" class="form-check-input"
+                                            type="checkbox" :true-value="1" :false-value="0">
+                                        <label class="form-check-label" for="is_enabled">是否啟用</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <!-- <p>確認區域</p>
+                        title{{tempData.title}}
+                        category{{tempData.category}}
+                        unit{{tempData.unit}}
+                        origin_price{{tempData.origin_price}}
+                        price{{tempData.price}}
+                        description{{tempData.description}}
+                        content{{tempData.content}}
+                        is_enabled{{tempData.is_enabled}} -->
+                    </div>
+                    <!-- Modal footer 這邊有兩條路徑 -->
+                    <!-- 按下取消，什麼事都不會發生，tempData狀態 也不會重置 -->
+                    <!-- 按下確認，會 v-on updateProduct 方法-->
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            取消
+                        </button>
+                        <button type="button" class="btn btn-primary" @click="updateProduct">
+                            確認
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="delProductModal" ref="delProductModal" class="modal fade" tabindex="-1"
+            aria-labelledby="delProductModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content border-0">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 id="delProductModalLabel" class="modal-title">
+                            <span>刪除產品</span>
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        是否刪除
+                        <strong class="text-danger">{{this.tempData.title}}</strong> 商品(刪除後將無法恢復)。
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            取消
+                        </button>
+                        <button type="button" class="btn btn-danger" @click="deleteProduct">
+                            確認刪除
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Modal -->
+    </div>
+
+    <script type="module">
+        // 用Js 操作開啟 Modal 的方法，但這樣子做，Modal 開啟之後，和 Vue 並沒有連結，因此要將 抓取DOM 和 實體化 的這兩個步驟改到 mounted() 裡面進行
+        // const productModal = document.querySelector("#productModal");
+        // const productModal = new bootstrap.Modal(productModal);
+        // productModal 必須在全域先行宣告，原因是 openModal() 也需要這個變數
+        let productModal = null;
+        let delProductModal = null;
+        const app = Vue.createApp({
+            data() {
+                return {
+                    apiPath: "chrissqr",
+                    apiUrl: `https://vue3-course-api.hexschool.io/v2`,
+                    products: [],
+                    isNew: false,
+                    tempData: {
+                        imagesUrl: [],
+                    },
+                };
+            },
+            methods: {
+                signinCheck() {
+                    axios.post(`${this.apiUrl}/api/user/check`)
+                        .then((response) => {
+                            // 驗證完登入狀態之後，馬上要執行取得產品列表的行為
+                            this.getProductsList();
+                        })
+                        .catch((error) => {
+                            alert(error.data?.message);
+                            window.location = "login.html";
+                        })
+                },
+                getProductsList() {
+                    axios.get(`${this.apiUrl}/api/${this.apiPath}/admin/products/all`)
+                        .then((response) => {
+                            // 把從遠短拿回來的物件包物件資料裡面的物件，一個一個塞到 products 陣列裡面
+                            // console.log(response.data);
+                            // const products = response.data.products;
+                            // const productsIdArray = Object.keys(products);
+                            // console.log(productsIdArray);
+                            // productsIdArray.forEach((item) => {
+                            //     // console.log(item);
+                            //     // console.log(products[item]);
+                            //     this.products.push(products[item]);
+                            // });
+
+                            // 上面註解掉的程式碼，會使得新增資料之後，表格重新渲染時出現修改前即修改後的資料
+                            // 下面的程式碼，拿到的是物件包物件資料，這樣的資料依然可以透過 v-for 正確渲染
+                            this.products = response.data.products;
+                        })
+                        .catch((error) => {
+                            alert(error.response);
+                        });
+                },
+                openModal(isNew, item) {   // item 這個參數是為了走 edit 和 delete 這兩條路徑的時候，知道是哪一筆商品資料要被編輯或刪除 
+                    // 走新增資料這條路
+                    // 資料狀態 this.isNew 要修改為 true
+                    // 資料狀態 this.tempData 要清空，並讓內部結構 imagesUrl 重置為空陣列
+                    // 呼叫 Bootstrap 方法，開啟 productModal 實例
+                    if(isNew === "new"){
+                        this.isNew = true;
+                        this.tempData = {
+                            imagesUrl: []
+                        };
+                        productModal.show();
+                    }
+                    else if (isNew === "edit"){
+                        this.isNew = false;
+                        this.tempData = {...item};  //這邊必須要對 item 進行淺複製，再讓 this.tempData 指向淺複製出來的儲存記憶體位置
+                        productModal.show();
+                    }
+                    else if (isNew === "delete"){
+                        this.isNew = false;
+                        this.tempData = {...item};
+                        delProductModal.show();
+                    }
+                },
+                createImages() {
+                    this.tempData.imagesUrl = [],
+                    this.tempData.imagesUrl.push('')
+                },
+                updateProduct() {
+                    // 要新增商品資料，使用 post api  [post] 網域/v2/api/{api_path}/admin/product
+                    // api 的行為是，將一筆包好的物件資料 post 出去給 server
+                    // api 文件指示的需求：
+                    // (1) api_path
+                    // (2) 包好的商品物件資料 {data: this.tempData}，
+                    // 這個物件內並沒有 id 這個項目，post 之後他會自己生成
+                    //  post 之後，需要重新 get 商品列表並渲染列表，因為前面已寫方法，直接 getData()
+                    // 也要關閉 新增商品的 modal，使用 Bootstrap 方法 hide()
+                    let url = `${this.apiUrl}/api/${this.apiPath}/admin/product`;
+                    let http = "post";
+
+                    // 要修改指定商品資料，使用 put api [put] 網域/v2/api/{api_path}/admin/product/{id}
+                    // api 的行為是，依據傳過去的 id 判斷是哪一比物件資料的狀態需要被更改，並依據收到的物件資料修改 server 端的資料狀態
+                    // api 文件指示的需求：
+                    // (1) api_path
+                    // (2) 包好的商品物件資料 {data: this.tempData}
+                    // id 是識別物件身份的關鍵
+                    // put 之後，需要重新 get 商品列表並渲染列表，因為前面已寫方法，直接 getData()
+                    // 也要關閉 新增商品的 modal，使用 Bootstrap 方法 hide()
+                    // 因為 post 和 put 在下面會共用相同的程式碼，所以要增加一段走 put 路徑的判斷
+                    if(!this.isNew){
+                        url =`${this.apiUrl}/api/${this.apiPath}/admin/product/${this.tempData.id}`;
+                        http = "put";
+                    }
+
+                    axios[http](url, {data: this.tempData})
+                         .then((response) => {
+                            alert(response.data.message);
+                            this.getProductsList();
+                            productModal.hide();
+                         })
+                         .catch((error) => {
+                            alert(error.response.data.message);
+                         })
+                },
+                deleteProduct() {
+                    // 要新增商品資料，使用 delete api  [delete] 網域/v2/api/{api_path}/admin/product/{id}
+                    // api 的行為是，將指定 id 傳出去給 server，server 會依照 id 刪除指定物件資料
+                    // api 文件指示的需求：
+                    // (1) api_path，${this.apiPath}
+                    // (2) id，${this.tempData.id}
+                    //  delete 之後，需要重新 get 商品列表並渲染列表，因為前面已寫方法，直接 getData()
+                    // 也要關閉 刪除商品的 modal，使用 Bootstrap 方法 hide()
+                    let url = `${this.apiUrl}/api/${this.apiPath}/admin/product/${this.tempData.id}`;
+                    let http = "delete";
+
+                    axios[http](url)
+                        .then((response) => {
+                            alert(response.data.message);
+                            this.getProductsList();
+                            delProductModal.hide();
+                        })
+                        .catch((error) => {
+                            alert(error.response.data.message)
+                        })
+                }
+            },
+            mounted() {
+                // 在 mounted() 生命週期內，使用token
+                const token = document.cookie.replace(/(?:(?:^|.*;\s*)adminToken\s*\=\s*([^;]*).*$)|^.*$/, "$1",);
+                axios.defaults.headers.common['Authorization'] = token;
+                this.signinCheck();
+
+                // 開啟 modal 之後，透過 vue 渲染 data
+                // 抓取 DOM 和 指派 productModal 一行完成
+                productModal = new bootstrap.Modal(document.querySelector("#productModal"));
+                delProductModal = new bootstrap.Modal(document.querySelector("#delProductModal"));
+            }
+        });
+        app.mount("#app");
+    </script>
+
+
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/axios/0.9.1/axios.min.js'
+        integrity='sha512-Xk3wWei2TGrsh9kDSBKUMIjw/86sLUvhtnv9f7fOuIwhhiUTKz8szkWkzHthrM5Bb3Bu9idSzkxOrkzhcneuiw=='
+        crossorigin='anonymous'></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"
+        integrity="sha384-SR1sx49pcuLnqZUnnPwx6FCym0wLsk5JZuNx2bPPENzswTNFaQU1RDvt3wT4gWFG"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.min.js"
+        integrity="sha384-j0CNLUeiqtyaRmlzUHCPZ+Gy5fQu0dQ6eZ/xAww941Ai1SxSY+0EQqNXNE6DZiVc"
+        crossorigin="anonymous"></script>
+
+</body>
+
+</html>
